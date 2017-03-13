@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hackathon-Getir-Bitaksi-Emre Kul</title>
+    <!-- bower:css -->
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="lib/bootstrap-daterangepicker/daterangepicker.css" />
+    <!-- endbower -->
+	<!-- bower:js -->
+    <script src="lib/jquery/dist/jquery.js"></script>
+    <script src="lib/angular/angular.js"></script>
+    <script src="lib/angular-messages/angular-messages.js"></script>
+    <script src="lib/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="lib/moment/moment.js"></script>
+    <script src="lib/bootstrap-daterangepicker/daterangepicker.js"></script>
+    <!-- endbower -->
+    <script src="js/angular-daterangepicker.js"></script>
+	<style>
+		.overlay{
+			position:fixed;
+			height:100%;
+			width:100%;
+			background-color : rgba(50,50,50,0.1);
+			z-index:100;
+		}
+		.overlay img {
+			position: absolute;
+			margin: auto;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+		}
+		.btn{
+			margin:2px;
+		}
+		.datatable{
+			table-layout:fixed;
+		}
+		.datatd{
+			overflow:hidden;
+			word-wrap:break-word;
+		}
+	</style>
+</head>
+<body ng-controller="mainCtrl">
+<div class="overlay" ng-show="loading" >
+	<img src="assets/loading/default.svg" />
+</div>
+<div class="container" >
+	<div class="page-header">
+		<h1>Getir-Bitaksi Hackathon</h1>
+	</div>
+    <div class="row">
+        <div class="col-md-4" >
+            <form name="dateForm" class="form-horizontal" >
+                <div class="form-group" >
+					<label for="daterange" class="control-label">Tarih Aralığı Seçiniz : </label>
+                    <div class="input-group" id="daterange">
+                        <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+                        <input date-range-picker name="daterange" class="form-control date-picker" type="text"
+                           ng-model="date" options="dateOpts" required/>
+					</div>
+					<button class="btn btn-primary btn-sm btn-block" ng-click="getDatas()">Ara</button>
+				</div>
+			</form>	
+		</div>
+		
+		<div class="col-md-8" >			
+			<table class="table table-hover datatable">
+				<thead>
+					<tr>
+						<th>CreatedAt</th>
+						<th>Key</th>
+						<th>Value</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="record in datas.records | startFrom : pageStart | limitTo:pageLimit">
+						<td class="datatd">{{record.createdAt}}</td>
+						<td class="datatd">{{record.key}}</td>
+						<td class="datatd">{{record.value}}</td>
+					</tr>
+				</tbody>
+			</table>
+			<button class="btn btn-primary" ng-click="pageGoFirst()" ng-show="datas.records.length">
+				<<<
+			</button>
+			<button class="btn btn-primary" ng-click="pageGoBack()" ng-show="datas.records.length">
+				<
+			</button>
+			<button class="btn btn-success" ng-show="datas.records.length">
+				{{pageNum}}
+			</button>
+			<button class="btn btn-primary" ng-click="pageGoNext() " ng-show="datas.records.length">
+				>
+			</button>
+			<button class="btn btn-primary" ng-click="pageGoLast() " ng-show="datas.records.length">
+				>>>
+			</button>
+		</div>
+    </div>
+</div>
+</body>
+<script>
+myApp = angular.module('mainModule', ['ngMessages', 'daterangepicker']);
+myApp.controller('mainCtrl', function($scope,$http) {
+    $scope.date = {
+        startDate: moment().subtract(1, "days"),
+        endDate: moment()
+    };
+  
+    $scope.dateOpts = {
+        locale: {
+			format : "YYYY-MM-DD",
+            applyClass: 'btn-green',
+            applyLabel: "Seç",
+            cancelLabel: 'İptal',
+            daysOfWeek: ['Pz','Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct'],
+            firstDay: 1,
+            monthNames: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül',
+                'Ekim', 'Kasım', 'Aralık'
+            ]
+        }
+    };
+    //Watch for date changes
+    $scope.$watch('date', function(newDate) {
+        //console.log('Date Changed : ', newDate);
+    }, false);
+	//Request
+	$scope.loading = false;
+	$scope.datas = "";
+	$scope.getDatas = function(){
+		$scope.datas = "";
+		$scope.loading = true;
+		$scope.pageStart = 0;
+		$http({
+			method: 'POST',
+			url: 'https://getir-bitaksi-hackathon.herokuapp.com/getRecords',
+			data : $scope.date
+		}).then(function successCallback(response) {
+			//console.log(response);
+			$scope.datas = response.data;
+			$scope.loading = false;
+		}, function errorCallback(response) {
+			//alert("Error : ");
+			$scope.loading = false;
+		});
+	}
+	//PAGE NUMBERS
+	$scope.pageStart = 0;
+	$scope.pageLimit = 5;
+	$scope.pageNum = 0;
+	$scope.pageGoFirst = function(){
+		$scope.pageStart = 0;
+		$scope.pageNum = parseInt($scope.pageStart/$scope.pageLimit);
+	}
+	$scope.pageGoLast = function(){
+		$scope.pageStart =  $scope.datas.records.length-$scope.pageLimit;
+		$scope.pageNum = parseInt($scope.pageStart/$scope.pageLimit);
+	}
+	$scope.pageGoNext = function(){
+		($scope.pageStart + $scope.pageLimit >= $scope.datas.records.length)?$scope.pageStart = $scope.datas.records.length-$scope.pageLimit:$scope.pageStart += $scope.pageLimit;
+		$scope.pageNum = parseInt($scope.pageStart/$scope.pageLimit);
+	}
+	$scope.pageGoBack = function(){
+		($scope.pageStart - $scope.pageLimit < 0)?$scope.pageStart = 0:$scope.pageStart -= $scope.pageLimit;
+		$scope.pageNum = parseInt($scope.pageStart/$scope.pageLimit);
+	}
+});
+myApp.filter('startFrom', function() {
+    return function(input, start) {
+        if(input) {
+            start = +start; //parse to int
+            return input.slice(start);
+        }
+        return [];
+    }
+});
+angular.bootstrap(document, ['mainModule']);
+</script>
+
+</html>
