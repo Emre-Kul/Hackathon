@@ -135,6 +135,7 @@ myApp.controller('mainCtrl', function($scope,$http) {
 		$scope.datas = "";
 		$scope.loading = true;
 		$scope.pageStart = 0;
+		$scope.pageNum = 0;
 		$http({
 			method: 'POST',
 			url: 'https://getir-bitaksi-hackathon.herokuapp.com/getRecords',
